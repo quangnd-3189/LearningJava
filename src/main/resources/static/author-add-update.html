@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Add or Update Author</title>
+  <script>
+    let books = [];
+    let bookIndex = 0;
+    let isUpdate = false;
+
+    function loadBooks() {
+      fetch("books/")
+        .then(res => res.json())
+        .then(result => {
+          console.log(result);
+          this.books = result.data;
+        });
+    }
+
+    function addBook() {
+
+      const container = document.getElementById("bookList");
+
+      const div = document.createElement("div");
+
+      div.style.marginBottom = "10px";
+
+      div.innerHTML = `
+        <select name="books[${bookIndex}].id">
+          ${this.books.map(b => `<option value="${b.id}">${b.title}</option>`).join("")}
+        </select>
+        <button type="button" onclick="removeBook(this)">Remove</button>
+      `;
+
+      container.appendChild(div);
+      bookIndex++;
+      console.log("Book index after adding:", bookIndex);
+    }
+
+    function removeBook(btn){
+      btn.parentElement.remove();
+    }
+
+    function validateNoDuplicates() {
+      const selects = document.querySelectorAll('select[name^="books"]');
+      const selectedValues = Array.from(selects).map(select => select.value).filter(val => val !== "");
+      
+      const uniqueValues = new Set(selectedValues);
+      
+      if (uniqueValues.size < selectedValues.length) {
+        alert("Duplicate books selected! Please choose different books.");
+        return false;
+      }
+      return true;
+    }
+
+    function checkNullData(){
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const bookSelects = document.querySelectorAll('select[name^="books"]');
+
+      if (!name || !email || !phone) {
+        alert("Please fill in all required fields (Name, Email, Phone).");
+        return false;
+      }
+      for (let select of bookSelects) {
+        if (!select.value) {
+          alert("Please select a book for all book fields.");
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function addUpdateAuthor() {
+      if (!validateNoDuplicates()) {
+        alert("Please remove duplicate book selections before submitting.");
+        return;
+      }
+
+      if (!checkNullData()) {
+        return;
+      }
+
+      const form = document.getElementById("authorForm");
+      const formData = new FormData(form);
+      const data = {};
+
+      formData.forEach((value, key) => {
+        const keys = key.split(/[\[\].]+/).filter(k => k);
+        let current = data;
+
+        keys.forEach((k, index) => {
+          const isLast = index === keys.length - 1;
+          const nextKey = keys[index + 1];
+          const isNextIndex = !isNaN(nextKey);
+
+          if (isLast) {
+            current[k] = value;
+          } else {
+            if (!current[k]) {
+              current[k] = isNextIndex ? [] : {};
+            }
+            current = current[k];
+          }
+        });
+      });
+
+
+      console.log(data);
+
+      if (isUpdate) {
+        data.id = new URLSearchParams(window.location.search).get("id");
+        fetch("authors/update", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        }).then(res => {
+          if (res.ok) {
+            alert("Author updated successfully!");
+            window.location.href = "/";
+          } else {
+            alert("Failed to update author.");
+          }
+        }).catch(error => {
+          console.error("Error:", error);
+          alert("An error occurred while updating the author.");
+        });
+      } else {
+        fetch("authors/add", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(data)
+        }).then(res => {
+          if (res.ok) {
+            alert("Author added/updated successfully!");
+            window.location.href = "/";
+          } else {
+            alert("Failed to add/update author.");
+          }
+        }).catch(error => {
+          console.error("Error:", error);
+          alert("An error occurred while adding/updating the author.");
+        });
+      }
+    }
+
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get("id")
+
+    if (id) {
+      isUpdate = true;
+      fetch("authors/detail/" + id)
+        .then(res => res.json())
+        .then(result => {
+          console.log(result)
+          const author = result.data
+
+          document.getElementById("name").value = author.name;
+          document.getElementById("email").value = author.email;
+          document.getElementById("phone").value = author.phone;
+
+          if (author.books) {
+            this.books = author.books;
+            author.books.forEach(book => {
+              console.log("Adding book with ID:", book.id);
+              addBook();
+              const lastSelect = document.querySelector('#bookList > div:last-child select');
+              if (lastSelect) {
+                lastSelect.value = String(book.id);
+              }
+            });
+          }
+        });
+    }
+
+    window.onload = loadBooks;
+    </script>
+</head>
+
+<body>
+
+  <div id="authorDetail">
+    <h2>Add or Update Author</h2>
+    <form id="authorForm" style="margin-bottom: 20px;">
+      <label for="name">Name:</label><br>
+      <input type="text" id="name" name="name"><br><br>
+      <label for="email">Email:</label><br>
+      <input type="email" id="email" name="email"><br><br>
+      <label for="phone">Phone:</label><br>
+      <input type="text" id="phone" name="phone"><br><br>
+      <div id="bookList"></div>
+      <button type="button" style="margin-bottom: 10px;" onclick="addBook()">Add Book</button><br>
+      <button type="button" onclick="addUpdateAuthor()">Submit</button>
+    </form>
+  </div>
+
+  <div id="footer">
+    <button onclick="history.back()">Back to List</button>
+  </div>
+
+  <script>
+  
+  </script>
+
+</body>
+
+</html>

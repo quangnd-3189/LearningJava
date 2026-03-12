@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Author Detail</title>
+</head>
+<body>
+
+<h2>Author Detail</h2>
+
+<div id="authorInfo"></div>
+
+<div id="">
+  <button onclick="history.back()">Back to List</button>
+</div>
+
+<script>
+
+const params = new URLSearchParams(window.location.search)
+const id = params.get("id")
+
+fetch("authors/detail?id=" + id)
+  .then(res => res.json())
+  .then(result => {
+    console.log(result)
+    const author = result.data
+
+    let books = author.books
+      .map(b => `<li>${b.title}</li>`)
+      .join("")
+
+    document.getElementById("authorInfo").innerHTML = `
+      <h3>Name: ${author.name}</h3>
+      <b>Books:</b>
+      <ul>${books}</ul>
+    `
+  })
+
+</script>
+
+</body>
+</html>

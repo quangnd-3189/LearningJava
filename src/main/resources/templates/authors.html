@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Authors</title>
+</head>
+<body>
+
+<h2>Author List</h2>
+
+<button onclick="addAuthor()" style="margin-bottom: 10px;">Add Author</button>
+<table border="1">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Phone</th>
+      <th>Books</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="authorTable"></tbody>
+</table>
+
+<script>
+
+fetch("authors/?page=0&size=10")
+  .then(res => res.json())
+  .then(result => {
+    console.log(result)
+    const authors = result.data.list
+    const table = document.getElementById("authorTable")
+
+    authors.forEach(author => {
+
+      const books = author.books
+        .map(b => b.title)
+        .join(", ")
+
+      const row = `
+        <tr>
+          <td>${author.name}</td>
+          <td>${author.email}</td>
+          <td>${author.phone}</td>
+          <td>${books}</td>
+          <td>
+            <button onclick="editAuthor('${author.id}')">Edit</button>
+            <button onclick="deleteAuthor('${author.id}')">Delete</button>
+          </td>
+        </tr>
+      `
+
+      table.innerHTML += row
+    })
+
+  })
+
+function editAuthor(id){
+  window.location.href = "/author-add-update.html?id=" + encodeURIComponent(id)
+}
+function deleteAuthor(id){
+  if (confirm("Are you sure you want to delete this author?")) {
+    fetch("authors/delete/" + encodeURIComponent(id), {
+      method: "DELETE"
+    }).then(res => {
+      if (res.ok) {
+        alert("Author deleted successfully!");
+        window.location.reload();
+      } else {
+        alert("Failed to delete author.");
+      }
+    }).catch(error => {
+      console.error("Error:", error);
+    });
+  }
+}
+
+function addAuthor() {
+  // open html form to add author
+  window.location.href = "/author-add-update.html"
+}
+
+</script>
+
+</body>
+</html>
